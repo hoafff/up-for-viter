@@ -1,0 +1,22 @@
+--- banbinhthuongvi_viterbi_lowpower_v4/tb/tb_viterbi_decoder_basic.v	2026-05-13 00:01:36.213347045 +0000
++++ banbinhthuongvi_viterbi_v6_2cycle_safe/tb/tb_viterbi_decoder_basic.v	2026-05-13 00:20:29.146516157 +0000
+@@ -12,7 +12,7 @@
+     integer pass_count;
+         integer fail_count;
+ 
+-        localparam integer EXPECTED_LATENCY = 0;
++        localparam integer EXPECTED_LATENCY = 1;
+ 
+         // -------------------------------------------- -----------------------------
+         // DUT
+@@ -103,8 +103,8 @@
+     // -------------------------------------------------------------------------
+     // Wait for done, check exact latency and output data
+     //
+-    // For v4, o_done is already high when send_frame returns because the
+-    // combinational Viterbi core is captured at the acceptance edge.
++    // For v6, o_done is asserted one cycle after send_frame returns because
++    // the decoder performs two 4-stage ACS passes over two cycles.
+     // -------------------------------------------------------------------------
+     task automatic wait_done_and_check;
+         input [7:0]  expected_data;

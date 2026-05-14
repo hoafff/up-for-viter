@@ -1,0 +1,80 @@
+--- orig_viterbi/banbinhthuongvi/syn/run_genus.tcl	2026-05-06 00:12:49.000000000 +0000
++++ banbinhthuongvi_viterbi_lowpower/syn/run_genus.tcl	2026-05-12 16:06:02.876390551 +0000
+@@ -24,6 +24,16 @@
+ 
+ set_db library $LIB_FILES
+ 
++# Lab update: do not use scan flip-flops.
++# This matches the requested rule:
++#   set_db [get_db lib_cells *SDFF*] .dont_use true
++catch {set_db [get_db lib_cells *SDFF*] .dont_use true}
++set sdff_cells [get_db lib_cells *SDFF*]
++if {[llength $sdff_cells] > 0} {
++    puts "INFO: Disable scan flip-flops: $sdff_cells"
++    catch {set_db $sdff_cells .dont_use true}
++}
++
+ # ============================================================
+ # Enable clock-gating cells if the library marks them dont_use.
+ # Must be done before read_hdl / elaborate.
+@@ -39,6 +49,8 @@
+ }
+ 
+ catch {set_db lp_insert_clock_gating true}
++catch {set_db lp_clock_gating_min_flops 4}
++catch {set_db lp_clock_gating_style latch}
+ 
+ set RTL_FILES [list \
+     rtl/viterbi_decoder.v \
+@@ -56,29 +68,42 @@
+ set_db syn_map_effort     high
+ set_db syn_opt_effort     high
+ 
++set ACT_FILE "sim/waves/viterbi_activity.vcd"
++
++# Read RTL VCD before synthesis so Genus can use realistic switching
++# activity for power-driven mapping/optimization when supported.
++if {[file exists $ACT_FILE]} {
++    puts "============================================================"
++    puts "INFO: Reading RTL VCD activity before synthesis from $ACT_FILE"
++    puts "============================================================"
++    if {[catch {read_vcd -static -vcd_scope tb_viterbi_decoder_fileio.dut $ACT_FILE} vcd_msg_pre]} {
++        puts "WARNING: pre-synthesis read_vcd failed:"
++        puts $vcd_msg_pre
++    } else {
++        puts "INFO: pre-synthesis read_vcd completed."
++        puts $vcd_msg_pre
++    }
++} else {
++    puts "WARNING: VCD activity file not found before synthesis: $ACT_FILE"
++}
++
+ syn_generic
+ syn_map
+ syn_opt
+ 
+-# ============================================================
+-# Read VCD activity after syn_opt for power report
+-# ============================================================
+-set ACT_FILE "sim/waves/viterbi_activity.vcd"
+-
++# Re-read VCD after syn_opt for final power reporting.
+ if {[file exists $ACT_FILE]} {
+     puts "============================================================"
+     puts "INFO: Reading VCD activity after syn_opt from $ACT_FILE"
+     puts "============================================================"
+-
+     if {[catch {read_vcd -static -vcd_scope tb_viterbi_decoder_fileio.dut $ACT_FILE} vcd_msg]} {
+-        puts "WARNING: read_vcd failed:"
++        puts "WARNING: post-opt read_vcd failed:"
+         puts $vcd_msg
+         puts "WARNING: Power may use default activity."
+     } else {
+-        puts "INFO: read_vcd completed successfully."
++        puts "INFO: post-opt read_vcd completed."
+         puts $vcd_msg
+     }
+-
+ } else {
+     puts "============================================================"
+     puts "WARNING: VCD activity file not found: $ACT_FILE"

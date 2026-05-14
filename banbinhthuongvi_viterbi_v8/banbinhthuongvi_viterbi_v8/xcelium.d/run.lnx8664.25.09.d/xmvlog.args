@@ -1,0 +1,21 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-XLMODE
+./xcelium.d/run.lnx8664.25.09.d
+-RUNMODE
+-v2001
+rtl/viterbi_decoder.v
+tb/tb_viterbi_decoder_fileio.v
+-CDSLIB
+./xcelium.d/run.lnx8664.25.09.d/cdsrun.lib
+-HDLVAR
+./xcelium.d/run.lnx8664.25.09.d/hdlrun.var
+-no_analogsolver
+-MESSAGES
+-UPDATE
+-XLLIBSTORE
+./xcelium.d/run.lnx8664.25.09.d/xllibs
+-ALLOWUNBOUND
+-hastop

@@ -1,0 +1,8 @@
+--- orig_viterbi/banbinhthuongvi/syn/constraints.sdc	2026-05-06 00:41:36.000000000 +0000
++++ banbinhthuongvi_viterbi_lowpower/syn/constraints.sdc	2026-05-12 16:06:02.876666191 +0000
+@@ -1,4 +1,4 @@
+-create_clock -name clk -period 5.4 [get_ports clk]
++create_clock -name clk -period 5.56 [get_ports clk]
+ 
+ set_input_delay  0.3 -clock clk [get_ports {en i_data}]
+ set_output_delay 0.3 -clock clk [get_ports {o_data o_done}]

@@ -1,0 +1,22 @@
+--- banbinhthuongvi_viterbi_lowpower_v2/tb/tb_viterbi_decoder_basic.v	2026-05-12 23:33:11.445098653 +0000
++++ banbinhthuongvi_viterbi_lowpower_v3/tb/tb_viterbi_decoder_basic.v	2026-05-12 23:44:37.424109151 +0000
+@@ -12,7 +12,7 @@
+     integer pass_count;
+         integer fail_count;
+ 
+-        localparam integer EXPECTED_LATENCY = 7;
++        localparam integer EXPECTED_LATENCY = 0;
+ 
+         // -------------------------------------------- -----------------------------
+         // DUT
+@@ -103,8 +103,8 @@
+     // -------------------------------------------------------------------------
+     // Wait for done, check exact latency and output data
+     //
+-    // Because send_frame returns after the acceptance edge already happened,
+-    // counting from the next posedge gives the expected latency directly.
++    // For v3, o_done is already high when send_frame returns because the
++    // combinational Viterbi core is captured at the acceptance edge.
+     // -------------------------------------------------------------------------
+     task automatic wait_done_and_check;
+         input [7:0]  expected_data;

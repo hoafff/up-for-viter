@@ -1,0 +1,83 @@
+
+Cadence Innovus(TM) Implementation System.
+Copyright 2024 Cadence Design Systems, Inc. All rights reserved worldwide.
+
+Version:	v23.37-s090_1, built Mon Feb 9 16:09:58 PST 2026
+Options:	-files pnr/run_innovus.tcl -log reports/pnr/innovus.log 
+Date:		Wed May 13 07:59:07 2026
+Host:		iclab (x86_64 w/Linux 4.18.0-553.111.1.el8_10.x86_64) (8cores*32cpus*Intel(R) Xeon(R) CPU E5-2698 v3 @ 2.30GHz 40960KB)
+OS:		Red Hat Enterprise Linux 8.10 (Ootpa)
+
+License:
+		[07:59:07.483809] Configured Lic search path (23.02-s006): /home/cadence/license/license.dat
+
+		invs	Innovus Implementation System	23.1	checkout succeeded
+		8 CPU jobs allowed with the current license(s). Use setMultiCpuUsage to set your required CPU count.
+Change the soft stacksize limit to 0.2%RAM (256 mbytes). Set global soft_stack_size_limit to change the value.
+Info: Process UID = 583040 / dde073ef-d4ea-41a9-82a7-05d44464a54c / lFUTV4gSL0
+
+**INFO:  MMMC transition support version v31-84 
+
+<CMD> set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+<CMD> suppressMessage ENCEXT-2799
+Sourcing file "pnr/run_innovus.tcl" ...
+source pnr/run_innovus.tcl
+<CMD> set init_top_cell viterbi_decoder
+<CMD> set init_verilog netlist/viterbi_decoder_syn.v
+<CMD> set init_lef_file {/path/to/tech.lef /path/to/stdcells.lef}
+<CMD> set init_mmmc_file pnr/mmmc.tcl
+<CMD> init_design
+#% Begin Load MMMC data ... (date=05/13 07:59:39, mem=1857.9M)
+#% End Load MMMC data ... (date=05/13 07:59:39, total cpu=0:00:00.0, real=0:00:00.0, peak res=1859.3M, current mem=1859.3M)
+RC_TYP
+**ERROR: (IMPSYT-16038):	The specified file '/path/to/tech.lef' could not be found. Check your file system, correct the file name.
+**ERROR: (IMPSYT-16038):	The specified file '/path/to/stdcells.lef' could not be found. Check your file system, correct the file name.
+**ERROR: (IMPIMEX-7327):	The file '/path/to/tech.lef /path/to/stdcells.lef' from the init_lef_file variable does not exist or does not have read permissions, so it can't be loaded. If the missing file has LEF data needed by the netlist, a fatal error may occur later when reading the netlist. You should correct the filename to avoid this warning message. 
+Note, the setImportMode -treatUndefinedCellAsBbox option controls if an undefined modules is treated as a black-boxes, and setCheckMode -tapeOut controls if an undefined module (not converted to a blackbox) is treated as a fatal error or empty module when reading the netlist.
+**ERROR: (IMPSYT-6692):	Invalid return code while executing 'pnr/run_innovus.tcl' was returned and script processing was stopped. Review the following error in 'pnr/run_innovus.tcl' then restart.
+Error info: pnr/run_innovus.tcl: 
+    while executing
+"error [putError $::uiEmsHandleId 6729 $msg]"
+    (procedure "apply_design" line 36)
+    invoked from within
+"apply_design $loadViewDefinition"
+    (procedure "init_design" line 422)
+    invoked from within
+"init_design"
+    (file "pnr/run_innovus.tcl" line 61)
+    invoked from within
+"::se_source_orig pnr/run_innovus.tcl"
+    ("uplevel" body line 1)
+    invoked from within
+"uplevel [concat ::se_source_orig  $args] "
+    (procedure "source" line 225)
+    invoked from within
+"source pnr/run_innovus.tcl"
+    invoked from within
+"::se::run_command_from_console "source pnr/run_innovus.tcl""
+    ("eval" body line 1)
+    invoked from within
+"eval {::se::run_command_from_console "source pnr/run_innovus.tcl"}"
+    (in namespace inscope "::" script line 1)
+    invoked from within
+"namespace inscope :: eval "::se::run_command_from_console \"source $fileName\""".
+<CMD> win
+<CMD> gui_select -rect {0.09100 0.06400 0.09200 0.05000}
+<CMD> gui_select -rect {0.08100 0.05100 0.06800 0.05400}
+<CMD> gui_select -rect {0.04000 0.07700 0.10800 0.02800}
+<CMD> zoomBox -0.17000 -0.07400 0.25700 0.19300
+<CMD> zoomBox -0.13100 -0.05600 0.23200 0.17100
+<CMD> zoomBox 0.00800 0.00600 0.14500 0.09200
+<CMD> uiSetTool select
+
+--------------------------------------------------------------------------------
+Exiting Innovus on Thu May 14 14:49:42 2026
+  Total CPU time:     2:03:22
+  Total real time:    30:50:37
+  Peak memory (main): 1901.07MB
+
+
+*** Memory Usage v#1 (Current mem = 1812.586M, initial mem = 842.945M) ***
+*** Message Summary: 0 warning(s), 5 error(s)
+
+--- Ending "Innovus" (totcpu=2:03:22, real=30:50:35, mem=1812.6M) ---

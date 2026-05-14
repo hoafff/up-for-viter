@@ -1,0 +1,422 @@
+--- banbinhthuongvi_viterbi_lowpower_v2/rtl/viterbi_decoder.v	2026-05-12 23:33:09.411321198 +0000
++++ banbinhthuongvi_viterbi_lowpower_v3/rtl/viterbi_decoder.v	2026-05-12 23:44:35.655672750 +0000
+@@ -10,76 +10,17 @@
+ );
+ 
+     // ============================================================
+-    // Low-power Viterbi decoder for the lab spec
++    // v3 low-power Viterbi decoder
+     // K = 3, R = 1/2, g0 = 111, g1 = 101
+-    // Input  : 16-bit hard-decision encoded frame, 8 symbols x 2 bits
+-    // Output : 8-bit decoded information
+-    //
+-    // v2 low-power changes:
+-    // - Use 3-bit path metrics with saturation to INF = 7.
+-    //   Exhaustive software checking over all 2^16 received frames shows
+-    //   the selected path is identical to the wider exact-metric decoder.
+-    // - Remove the S_OUT state.  The last ACS step and traceback result
+-    //   are consumed in the same clock edge, so dec7/final metrics are not
+-    //   stored in flip-flops.
+-    // - Store only dec1..dec6 survivor decisions; dec0 is unnecessary
+-    //   because the initial state is known, and dec7 is used combinationally.
+-    // - Operand-isolate traceback logic except on the final decode cycle.
++    // Fully combinational 8-step ACS/traceback core + output register.
++    // This removes the internal metric/decision flip-flops from v1/v2,
++    // leaving only o_data and o_done sequential state.  The goal is to
++    // cut clock internal power while keeping the implementation inside
++    // the Viterbi decoder boundary.
+     // ============================================================
+ 
+     localparam [2:0] INF = 3'd7;
+ 
+-    reg        busy;
+-    reg [2:0]  step;
+-
+-    // Path metrics for states 00, 01, 10, 11.
+-    reg [2:0] pm0, pm1, pm2, pm3;
+-
+-    // Survivor decision memory.
+-    // decN[0] = survivor select for state 00 at step N
+-    // decN[1] = survivor select for state 01 at step N
+-    // decN[2] = survivor select for state 10 at step N
+-    // decN[3] = survivor select for state 11 at step N
+-    // select = 0 means predecessor A, select = 1 means predecessor B.
+-    reg [3:0] dec1, dec2, dec3, dec4, dec5, dec6;
+-
+-    wire start_decode = (!busy) && en;
+-    wire run_decode   = busy || start_decode;
+-    wire final_step   = busy && (step == 3'd7);
+-
+-    wire [2:0] step_eff = start_decode ? 3'd0 : step;
+-
+-    wire [2:0] pm0_b = start_decode ? 3'd0 : pm0;
+-    wire [2:0] pm1_b = start_decode ? INF  : pm1;
+-    wire [2:0] pm2_b = start_decode ? INF  : pm2;
+-    wire [2:0] pm3_b = start_decode ? INF  : pm3;
+-
+-    // Current received pair.  i_data must remain stable from en until o_done.
+-    reg [1:0] rx_now;
+-    always @(*) begin
+-        if (run_decode) begin
+-            case (step_eff)
+-                3'd0: rx_now = i_data[15:14];
+-                3'd1: rx_now = i_data[13:12];
+-                3'd2: rx_now = i_data[11:10];
+-                3'd3: rx_now = i_data[9:8];
+-                3'd4: rx_now = i_data[7:6];
+-                3'd5: rx_now = i_data[5:4];
+-                3'd6: rx_now = i_data[3:2];
+-                3'd7: rx_now = i_data[1:0];
+-                default: rx_now = 2'b00;
+-            endcase
+-        end else begin
+-            rx_now = 2'b00;
+-        end
+-    end
+-
+-    // Hamming distance to output symbols 00, 01, 10, 11.
+-    wire [1:0] bm00 = {1'b0,  rx_now[1]} + {1'b0,  rx_now[0]};
+-    wire [1:0] bm01 = {1'b0,  rx_now[1]} + {1'b0, ~rx_now[0]};
+-    wire [1:0] bm10 = {1'b0, ~rx_now[1]} + {1'b0,  rx_now[0]};
+-    wire [1:0] bm11 = {1'b0, ~rx_now[1]} + {1'b0, ~rx_now[0]};
+-
+     function [2:0] sat3;
+         input [3:0] x;
+         begin
+@@ -87,131 +28,246 @@
+         end
+     endfunction
+ 
+-    // ACS equations for the fixed K=3, R=1/2 trellis.
+-    // Candidate values are 4-bit to avoid overflow before saturation.
+-    wire [3:0] c0a = {1'b0, pm0_b} + {2'b00, bm00}; // old 00 + input 0 -> new 00
+-    wire [3:0] c0b = {1'b0, pm1_b} + {2'b00, bm11}; // old 01 + input 0 -> new 00
+-
+-    wire [3:0] c1a = {1'b0, pm2_b} + {2'b00, bm10}; // old 10 + input 0 -> new 01
+-    wire [3:0] c1b = {1'b0, pm3_b} + {2'b00, bm01}; // old 11 + input 0 -> new 01
+-
+-    wire [3:0] c2a = {1'b0, pm0_b} + {2'b00, bm11}; // old 00 + input 1 -> new 10
+-    wire [3:0] c2b = {1'b0, pm1_b} + {2'b00, bm00}; // old 01 + input 1 -> new 10
+-
+-    wire [3:0] c3a = {1'b0, pm2_b} + {2'b00, bm01}; // old 10 + input 1 -> new 11
+-    wire [3:0] c3b = {1'b0, pm3_b} + {2'b00, bm10}; // old 11 + input 1 -> new 11
+-
+-    // Tie-breaking: predecessor A wins on equal metric.
+-    wire sel0 = (c0b < c0a);
+-    wire sel1 = (c1b < c1a);
+-    wire sel2 = (c2b < c2a);
+-    wire sel3 = (c3b < c3a);
+-
+-    wire [2:0] pm0_n = sat3(sel0 ? c0b : c0a);
+-    wire [2:0] pm1_n = sat3(sel1 ? c1b : c1a);
+-    wire [2:0] pm2_n = sat3(sel2 ? c2b : c2a);
+-    wire [2:0] pm3_n = sat3(sel3 ? c3b : c3a);
+-
+-    wire [3:0] dec_n = {sel3, sel2, sel1, sel0};
+-
+-    // Operand isolation for final traceback.  The traceback cone only needs
+-    // to be active during the final ACS cycle.
+-    wire [2:0] tb_pm0 = final_step ? pm0_n : 3'd0;
+-    wire [2:0] tb_pm1 = final_step ? pm1_n : 3'd0;
+-    wire [2:0] tb_pm2 = final_step ? pm2_n : 3'd0;
+-    wire [2:0] tb_pm3 = final_step ? pm3_n : 3'd0;
+-
+-    wire [3:0] tb_dec1 = final_step ? dec1  : 4'd0;
+-    wire [3:0] tb_dec2 = final_step ? dec2  : 4'd0;
+-    wire [3:0] tb_dec3 = final_step ? dec3  : 4'd0;
+-    wire [3:0] tb_dec4 = final_step ? dec4  : 4'd0;
+-    wire [3:0] tb_dec5 = final_step ? dec5  : 4'd0;
+-    wire [3:0] tb_dec6 = final_step ? dec6  : 4'd0;
+-    wire [3:0] tb_dec7 = final_step ? dec_n : 4'd0;
++    // ---------------- Stage 0: received symbol i_data[15:14] ----------------
++    wire [1:0] rx0 = i_data[15:14];
++    wire [1:0] bm00_0 = {1'b0,  rx0[1]} + {1'b0,  rx0[0]};
++    wire [1:0] bm01_0 = {1'b0,  rx0[1]} + {1'b0, ~rx0[0]};
++    wire [1:0] bm10_0 = {1'b0, ~rx0[1]} + {1'b0,  rx0[0]};
++    wire [1:0] bm11_0 = {1'b0, ~rx0[1]} + {1'b0, ~rx0[0]};
++    wire [3:0] c0a_0 = {1'b0, 3'd0} + {2'b00, bm00_0};
++    wire [3:0] c0b_0 = {1'b0, INF} + {2'b00, bm11_0};
++    wire [3:0] c1a_0 = {1'b0, INF} + {2'b00, bm10_0};
++    wire [3:0] c1b_0 = {1'b0, INF} + {2'b00, bm01_0};
++    wire [3:0] c2a_0 = {1'b0, 3'd0} + {2'b00, bm11_0};
++    wire [3:0] c2b_0 = {1'b0, INF} + {2'b00, bm00_0};
++    wire [3:0] c3a_0 = {1'b0, INF} + {2'b00, bm01_0};
++    wire [3:0] c3b_0 = {1'b0, INF} + {2'b00, bm10_0};
++    wire sel0_0 = (c0b_0 < c0a_0);
++    wire sel1_0 = (c1b_0 < c1a_0);
++    wire sel2_0 = (c2b_0 < c2a_0);
++    wire sel3_0 = (c3b_0 < c3a_0);
++    wire [2:0] pm0_1 = sat3(sel0_0 ? c0b_0 : c0a_0);
++    wire [2:0] pm1_1 = sat3(sel1_0 ? c1b_0 : c1a_0);
++    wire [2:0] pm2_1 = sat3(sel2_0 ? c2b_0 : c2a_0);
++    wire [2:0] pm3_1 = sat3(sel3_0 ? c3b_0 : c3a_0);
++    wire [3:0] dec0 = {sel3_0, sel2_0, sel1_0, sel0_0};
++
++    // ---------------- Stage 1: received symbol i_data[13:12] ----------------
++    wire [1:0] rx1 = i_data[13:12];
++    wire [1:0] bm00_1 = {1'b0,  rx1[1]} + {1'b0,  rx1[0]};
++    wire [1:0] bm01_1 = {1'b0,  rx1[1]} + {1'b0, ~rx1[0]};
++    wire [1:0] bm10_1 = {1'b0, ~rx1[1]} + {1'b0,  rx1[0]};
++    wire [1:0] bm11_1 = {1'b0, ~rx1[1]} + {1'b0, ~rx1[0]};
++    wire [3:0] c0a_1 = {1'b0, pm0_1} + {2'b00, bm00_1};
++    wire [3:0] c0b_1 = {1'b0, pm1_1} + {2'b00, bm11_1};
++    wire [3:0] c1a_1 = {1'b0, pm2_1} + {2'b00, bm10_1};
++    wire [3:0] c1b_1 = {1'b0, pm3_1} + {2'b00, bm01_1};
++    wire [3:0] c2a_1 = {1'b0, pm0_1} + {2'b00, bm11_1};
++    wire [3:0] c2b_1 = {1'b0, pm1_1} + {2'b00, bm00_1};
++    wire [3:0] c3a_1 = {1'b0, pm2_1} + {2'b00, bm01_1};
++    wire [3:0] c3b_1 = {1'b0, pm3_1} + {2'b00, bm10_1};
++    wire sel0_1 = (c0b_1 < c0a_1);
++    wire sel1_1 = (c1b_1 < c1a_1);
++    wire sel2_1 = (c2b_1 < c2a_1);
++    wire sel3_1 = (c3b_1 < c3a_1);
++    wire [2:0] pm0_2 = sat3(sel0_1 ? c0b_1 : c0a_1);
++    wire [2:0] pm1_2 = sat3(sel1_1 ? c1b_1 : c1a_1);
++    wire [2:0] pm2_2 = sat3(sel2_1 ? c2b_1 : c2a_1);
++    wire [2:0] pm3_2 = sat3(sel3_1 ? c3b_1 : c3a_1);
++    wire [3:0] dec1 = {sel3_1, sel2_1, sel1_1, sel0_1};
++
++    // ---------------- Stage 2: received symbol i_data[11:10] ----------------
++    wire [1:0] rx2 = i_data[11:10];
++    wire [1:0] bm00_2 = {1'b0,  rx2[1]} + {1'b0,  rx2[0]};
++    wire [1:0] bm01_2 = {1'b0,  rx2[1]} + {1'b0, ~rx2[0]};
++    wire [1:0] bm10_2 = {1'b0, ~rx2[1]} + {1'b0,  rx2[0]};
++    wire [1:0] bm11_2 = {1'b0, ~rx2[1]} + {1'b0, ~rx2[0]};
++    wire [3:0] c0a_2 = {1'b0, pm0_2} + {2'b00, bm00_2};
++    wire [3:0] c0b_2 = {1'b0, pm1_2} + {2'b00, bm11_2};
++    wire [3:0] c1a_2 = {1'b0, pm2_2} + {2'b00, bm10_2};
++    wire [3:0] c1b_2 = {1'b0, pm3_2} + {2'b00, bm01_2};
++    wire [3:0] c2a_2 = {1'b0, pm0_2} + {2'b00, bm11_2};
++    wire [3:0] c2b_2 = {1'b0, pm1_2} + {2'b00, bm00_2};
++    wire [3:0] c3a_2 = {1'b0, pm2_2} + {2'b00, bm01_2};
++    wire [3:0] c3b_2 = {1'b0, pm3_2} + {2'b00, bm10_2};
++    wire sel0_2 = (c0b_2 < c0a_2);
++    wire sel1_2 = (c1b_2 < c1a_2);
++    wire sel2_2 = (c2b_2 < c2a_2);
++    wire sel3_2 = (c3b_2 < c3a_2);
++    wire [2:0] pm0_3 = sat3(sel0_2 ? c0b_2 : c0a_2);
++    wire [2:0] pm1_3 = sat3(sel1_2 ? c1b_2 : c1a_2);
++    wire [2:0] pm2_3 = sat3(sel2_2 ? c2b_2 : c2a_2);
++    wire [2:0] pm3_3 = sat3(sel3_2 ? c3b_2 : c3a_2);
++    wire [3:0] dec2 = {sel3_2, sel2_2, sel1_2, sel0_2};
++
++    // ---------------- Stage 3: received symbol i_data[9:8] ----------------
++    wire [1:0] rx3 = i_data[9:8];
++    wire [1:0] bm00_3 = {1'b0,  rx3[1]} + {1'b0,  rx3[0]};
++    wire [1:0] bm01_3 = {1'b0,  rx3[1]} + {1'b0, ~rx3[0]};
++    wire [1:0] bm10_3 = {1'b0, ~rx3[1]} + {1'b0,  rx3[0]};
++    wire [1:0] bm11_3 = {1'b0, ~rx3[1]} + {1'b0, ~rx3[0]};
++    wire [3:0] c0a_3 = {1'b0, pm0_3} + {2'b00, bm00_3};
++    wire [3:0] c0b_3 = {1'b0, pm1_3} + {2'b00, bm11_3};
++    wire [3:0] c1a_3 = {1'b0, pm2_3} + {2'b00, bm10_3};
++    wire [3:0] c1b_3 = {1'b0, pm3_3} + {2'b00, bm01_3};
++    wire [3:0] c2a_3 = {1'b0, pm0_3} + {2'b00, bm11_3};
++    wire [3:0] c2b_3 = {1'b0, pm1_3} + {2'b00, bm00_3};
++    wire [3:0] c3a_3 = {1'b0, pm2_3} + {2'b00, bm01_3};
++    wire [3:0] c3b_3 = {1'b0, pm3_3} + {2'b00, bm10_3};
++    wire sel0_3 = (c0b_3 < c0a_3);
++    wire sel1_3 = (c1b_3 < c1a_3);
++    wire sel2_3 = (c2b_3 < c2a_3);
++    wire sel3_3 = (c3b_3 < c3a_3);
++    wire [2:0] pm0_4 = sat3(sel0_3 ? c0b_3 : c0a_3);
++    wire [2:0] pm1_4 = sat3(sel1_3 ? c1b_3 : c1a_3);
++    wire [2:0] pm2_4 = sat3(sel2_3 ? c2b_3 : c2a_3);
++    wire [2:0] pm3_4 = sat3(sel3_3 ? c3b_3 : c3a_3);
++    wire [3:0] dec3 = {sel3_3, sel2_3, sel1_3, sel0_3};
++
++    // ---------------- Stage 4: received symbol i_data[7:6] ----------------
++    wire [1:0] rx4 = i_data[7:6];
++    wire [1:0] bm00_4 = {1'b0,  rx4[1]} + {1'b0,  rx4[0]};
++    wire [1:0] bm01_4 = {1'b0,  rx4[1]} + {1'b0, ~rx4[0]};
++    wire [1:0] bm10_4 = {1'b0, ~rx4[1]} + {1'b0,  rx4[0]};
++    wire [1:0] bm11_4 = {1'b0, ~rx4[1]} + {1'b0, ~rx4[0]};
++    wire [3:0] c0a_4 = {1'b0, pm0_4} + {2'b00, bm00_4};
++    wire [3:0] c0b_4 = {1'b0, pm1_4} + {2'b00, bm11_4};
++    wire [3:0] c1a_4 = {1'b0, pm2_4} + {2'b00, bm10_4};
++    wire [3:0] c1b_4 = {1'b0, pm3_4} + {2'b00, bm01_4};
++    wire [3:0] c2a_4 = {1'b0, pm0_4} + {2'b00, bm11_4};
++    wire [3:0] c2b_4 = {1'b0, pm1_4} + {2'b00, bm00_4};
++    wire [3:0] c3a_4 = {1'b0, pm2_4} + {2'b00, bm01_4};
++    wire [3:0] c3b_4 = {1'b0, pm3_4} + {2'b00, bm10_4};
++    wire sel0_4 = (c0b_4 < c0a_4);
++    wire sel1_4 = (c1b_4 < c1a_4);
++    wire sel2_4 = (c2b_4 < c2a_4);
++    wire sel3_4 = (c3b_4 < c3a_4);
++    wire [2:0] pm0_5 = sat3(sel0_4 ? c0b_4 : c0a_4);
++    wire [2:0] pm1_5 = sat3(sel1_4 ? c1b_4 : c1a_4);
++    wire [2:0] pm2_5 = sat3(sel2_4 ? c2b_4 : c2a_4);
++    wire [2:0] pm3_5 = sat3(sel3_4 ? c3b_4 : c3a_4);
++    wire [3:0] dec4 = {sel3_4, sel2_4, sel1_4, sel0_4};
++
++    // ---------------- Stage 5: received symbol i_data[5:4] ----------------
++    wire [1:0] rx5 = i_data[5:4];
++    wire [1:0] bm00_5 = {1'b0,  rx5[1]} + {1'b0,  rx5[0]};
++    wire [1:0] bm01_5 = {1'b0,  rx5[1]} + {1'b0, ~rx5[0]};
++    wire [1:0] bm10_5 = {1'b0, ~rx5[1]} + {1'b0,  rx5[0]};
++    wire [1:0] bm11_5 = {1'b0, ~rx5[1]} + {1'b0, ~rx5[0]};
++    wire [3:0] c0a_5 = {1'b0, pm0_5} + {2'b00, bm00_5};
++    wire [3:0] c0b_5 = {1'b0, pm1_5} + {2'b00, bm11_5};
++    wire [3:0] c1a_5 = {1'b0, pm2_5} + {2'b00, bm10_5};
++    wire [3:0] c1b_5 = {1'b0, pm3_5} + {2'b00, bm01_5};
++    wire [3:0] c2a_5 = {1'b0, pm0_5} + {2'b00, bm11_5};
++    wire [3:0] c2b_5 = {1'b0, pm1_5} + {2'b00, bm00_5};
++    wire [3:0] c3a_5 = {1'b0, pm2_5} + {2'b00, bm01_5};
++    wire [3:0] c3b_5 = {1'b0, pm3_5} + {2'b00, bm10_5};
++    wire sel0_5 = (c0b_5 < c0a_5);
++    wire sel1_5 = (c1b_5 < c1a_5);
++    wire sel2_5 = (c2b_5 < c2a_5);
++    wire sel3_5 = (c3b_5 < c3a_5);
++    wire [2:0] pm0_6 = sat3(sel0_5 ? c0b_5 : c0a_5);
++    wire [2:0] pm1_6 = sat3(sel1_5 ? c1b_5 : c1a_5);
++    wire [2:0] pm2_6 = sat3(sel2_5 ? c2b_5 : c2a_5);
++    wire [2:0] pm3_6 = sat3(sel3_5 ? c3b_5 : c3a_5);
++    wire [3:0] dec5 = {sel3_5, sel2_5, sel1_5, sel0_5};
++
++    // ---------------- Stage 6: received symbol i_data[3:2] ----------------
++    wire [1:0] rx6 = i_data[3:2];
++    wire [1:0] bm00_6 = {1'b0,  rx6[1]} + {1'b0,  rx6[0]};
++    wire [1:0] bm01_6 = {1'b0,  rx6[1]} + {1'b0, ~rx6[0]};
++    wire [1:0] bm10_6 = {1'b0, ~rx6[1]} + {1'b0,  rx6[0]};
++    wire [1:0] bm11_6 = {1'b0, ~rx6[1]} + {1'b0, ~rx6[0]};
++    wire [3:0] c0a_6 = {1'b0, pm0_6} + {2'b00, bm00_6};
++    wire [3:0] c0b_6 = {1'b0, pm1_6} + {2'b00, bm11_6};
++    wire [3:0] c1a_6 = {1'b0, pm2_6} + {2'b00, bm10_6};
++    wire [3:0] c1b_6 = {1'b0, pm3_6} + {2'b00, bm01_6};
++    wire [3:0] c2a_6 = {1'b0, pm0_6} + {2'b00, bm11_6};
++    wire [3:0] c2b_6 = {1'b0, pm1_6} + {2'b00, bm00_6};
++    wire [3:0] c3a_6 = {1'b0, pm2_6} + {2'b00, bm01_6};
++    wire [3:0] c3b_6 = {1'b0, pm3_6} + {2'b00, bm10_6};
++    wire sel0_6 = (c0b_6 < c0a_6);
++    wire sel1_6 = (c1b_6 < c1a_6);
++    wire sel2_6 = (c2b_6 < c2a_6);
++    wire sel3_6 = (c3b_6 < c3a_6);
++    wire [2:0] pm0_7 = sat3(sel0_6 ? c0b_6 : c0a_6);
++    wire [2:0] pm1_7 = sat3(sel1_6 ? c1b_6 : c1a_6);
++    wire [2:0] pm2_7 = sat3(sel2_6 ? c2b_6 : c2a_6);
++    wire [2:0] pm3_7 = sat3(sel3_6 ? c3b_6 : c3a_6);
++    wire [3:0] dec6 = {sel3_6, sel2_6, sel1_6, sel0_6};
++
++    // ---------------- Stage 7: received symbol i_data[1:0] ----------------
++    wire [1:0] rx7 = i_data[1:0];
++    wire [1:0] bm00_7 = {1'b0,  rx7[1]} + {1'b0,  rx7[0]};
++    wire [1:0] bm01_7 = {1'b0,  rx7[1]} + {1'b0, ~rx7[0]};
++    wire [1:0] bm10_7 = {1'b0, ~rx7[1]} + {1'b0,  rx7[0]};
++    wire [1:0] bm11_7 = {1'b0, ~rx7[1]} + {1'b0, ~rx7[0]};
++    wire [3:0] c0a_7 = {1'b0, pm0_7} + {2'b00, bm00_7};
++    wire [3:0] c0b_7 = {1'b0, pm1_7} + {2'b00, bm11_7};
++    wire [3:0] c1a_7 = {1'b0, pm2_7} + {2'b00, bm10_7};
++    wire [3:0] c1b_7 = {1'b0, pm3_7} + {2'b00, bm01_7};
++    wire [3:0] c2a_7 = {1'b0, pm0_7} + {2'b00, bm11_7};
++    wire [3:0] c2b_7 = {1'b0, pm1_7} + {2'b00, bm00_7};
++    wire [3:0] c3a_7 = {1'b0, pm2_7} + {2'b00, bm01_7};
++    wire [3:0] c3b_7 = {1'b0, pm3_7} + {2'b00, bm10_7};
++    wire sel0_7 = (c0b_7 < c0a_7);
++    wire sel1_7 = (c1b_7 < c1a_7);
++    wire sel2_7 = (c2b_7 < c2a_7);
++    wire sel3_7 = (c3b_7 < c3a_7);
++    wire [2:0] pm0_8 = sat3(sel0_7 ? c0b_7 : c0a_7);
++    wire [2:0] pm1_8 = sat3(sel1_7 ? c1b_7 : c1a_7);
++    wire [2:0] pm2_8 = sat3(sel2_7 ? c2b_7 : c2a_7);
++    wire [2:0] pm3_8 = sat3(sel3_7 ? c3b_7 : c3a_7);
++    wire [3:0] dec7 = {sel3_7, sel2_7, sel1_7, sel0_7};
+ 
++    // Select the best final state after 8 trellis steps.
+     reg [1:0] best_state;
+     reg [1:0] s8, s7, s6, s5, s4, s3, s2, s1;
+     reg [7:0] best_path;
+ 
+     always @(*) begin
+-        if ((tb_pm0 <= tb_pm1) && (tb_pm0 <= tb_pm2) && (tb_pm0 <= tb_pm3)) begin
++        if ((pm0_8 <= pm1_8) && (pm0_8 <= pm2_8) && (pm0_8 <= pm3_8)) begin
+             best_state = 2'd0;
+-        end else if ((tb_pm1 <= tb_pm2) && (tb_pm1 <= tb_pm3)) begin
++        end else if ((pm1_8 <= pm2_8) && (pm1_8 <= pm3_8)) begin
+             best_state = 2'd1;
+-        end else if (tb_pm2 <= tb_pm3) begin
++        end else if (pm2_8 <= pm3_8) begin
+             best_state = 2'd2;
+         end else begin
+             best_state = 2'd3;
+         end
+ 
+-        // For any current state ns, predecessor state = {ns[0], decision}.
+-        // The decoded input bit at that trellis step is ns[1].
+         s8 = best_state;
+         best_path[0] = s8[1];
+ 
+-        s7 = {s8[0], tb_dec7[s8]};
++        s7 = {s8[0], dec7[s8]};
+         best_path[1] = s7[1];
+ 
+-        s6 = {s7[0], tb_dec6[s7]};
++        s6 = {s7[0], dec6[s7]};
+         best_path[2] = s6[1];
+ 
+-        s5 = {s6[0], tb_dec5[s6]};
++        s5 = {s6[0], dec5[s6]};
+         best_path[3] = s5[1];
+ 
+-        s4 = {s5[0], tb_dec4[s5]};
++        s4 = {s5[0], dec4[s5]};
+         best_path[4] = s4[1];
+ 
+-        s3 = {s4[0], tb_dec3[s4]};
++        s3 = {s4[0], dec3[s4]};
+         best_path[5] = s3[1];
+ 
+-        s2 = {s3[0], tb_dec2[s3]};
++        s2 = {s3[0], dec2[s3]};
+         best_path[6] = s2[1];
+ 
+-        s1 = {s2[0], tb_dec1[s2]};
++        s1 = {s2[0], dec1[s2]};
+         best_path[7] = s1[1];
+     end
+ 
+     always @(posedge clk or negedge rst_n) begin
+         if (!rst_n) begin
+-            busy   <= 1'b0;
+-            step   <= 3'd0;
+             o_done <= 1'b0;
+         end else begin
+-            o_done <= 1'b0;
+-
+-            if (start_decode) begin
+-                // Step 0: no survivor decision needs to be stored.
+-                pm0  <= pm0_n;
+-                pm1  <= pm1_n;
+-                pm2  <= pm2_n;
+-                pm3  <= pm3_n;
+-                step <= 3'd1;
+-                busy <= 1'b1;
+-            end else if (busy) begin
+-                if (step == 3'd7) begin
+-                    // Consume final ACS result combinationally and finish.
+-                    o_data <= best_path;
+-                    o_done <= 1'b1;
+-                    step   <= 3'd0;
+-                    busy   <= 1'b0;
+-                end else begin
+-                    pm0 <= pm0_n;
+-                    pm1 <= pm1_n;
+-                    pm2 <= pm2_n;
+-                    pm3 <= pm3_n;
+-
+-                    case (step)
+-                        3'd1: dec1 <= dec_n;
+-                        3'd2: dec2 <= dec_n;
+-                        3'd3: dec3 <= dec_n;
+-                        3'd4: dec4 <= dec_n;
+-                        3'd5: dec5 <= dec_n;
+-                        3'd6: dec6 <= dec_n;
+-                        default: ;
+-                    endcase
+-
+-                    step <= step + 3'd1;
+-                end
++            o_done <= en;
++            if (en) begin
++                o_data <= best_path;
+             end
+         end
+     end
