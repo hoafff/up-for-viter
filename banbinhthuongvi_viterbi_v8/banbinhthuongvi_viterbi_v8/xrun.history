@@ -1,4 +1,0 @@
-#e1(13May2026:07:54:40): source ./xcelium.d/env.d/env.history.13May2026_07_54_40
-s1(13May2026:07:54:40):  xrun -clean -f sim/run.f 
-#e2(14May2026:14:50:36): source ./xcelium.d/env.d/env.history.14May2026_14_50_36
-s2(14May2026:14:50:36):  xrun -clean -f sim/run.f 

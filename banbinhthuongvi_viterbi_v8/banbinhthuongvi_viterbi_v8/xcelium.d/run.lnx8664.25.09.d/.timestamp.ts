@@ -1,2 +1,0 @@
-1778632435 /home/iclab6/Downloads/banbinhthuongvi_viterbi_v8_layout_ready/rtl/viterbi_decoder.v
-1778628791 /home/iclab6/Downloads/banbinhthuongvi_viterbi_v8_layout_ready/tb/tb_viterbi_decoder_fileio.v
