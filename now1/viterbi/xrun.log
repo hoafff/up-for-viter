@@ -1,0 +1,58 @@
+xrun(64): 25.09-s004: (c) Copyright 1995-2026 Cadence Design Systems, Inc.
+TOOL:	xrun(64)	25.09-s004: Started on May 17, 2026 at 10:33:02 +07
+xrun
+	-64bit
+	-access +rwc
+	rtl/control.v
+	rtl/extract_bit.v
+	rtl/branch_metric.v
+	rtl/add_comp_slt.v
+	rtl/traceback.v
+	rtl/memory.v
+	rtl/viterbi_decoder.v
+	tb/tb_viterbi_readmemb.v
+Recompiling... reason: file './rtl/extract_bit.v' is newer than expected.
+	expected: Sun May 17 09:28:42 2026
+	actual:   Sun May 17 10:32:11 2026
+file: rtl/extract_bit.v
+	module worklib.extract_bit:v
+		errors: 0, warnings: 0
+file: rtl/memory.v
+	module worklib.memory:v
+		errors: 0, warnings: 0
+file: rtl/viterbi_decoder.v
+	module worklib.viterbi_decoder:v
+		errors: 0, warnings: 0
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+	Top level design units:
+		worklib.tb_viterbi_readmemb:v (module)
+	Building instance overlay tables: .................... Done
+	Generating native compiled code:
+		worklib.memory:v <0x3d7e1a9f>
+			streams:  26, words: 10389
+		worklib.extract_bit:v <0x38fb5559>
+			streams:   1, words:  1626
+	Building instance specific data structures.
+	Loading native compiled code:     .................... Done
+	Design hierarchy summary:
+		                 Instances  Unique
+		Modules:                10       8
+		Registers:              29      29
+		Scalar wires:           23       -
+		Vectored wires:         66       -
+		Always blocks:          12      12
+		Initial blocks:          2       2
+		Cont. assignments:      56      38
+		Pseudo assignments:      4       -
+		Process Clocks:          9       1
+		Simulation timescale:  1ps
+	Writing initial simulation snapshot: worklib.tb_viterbi_readmemb:v
+Loading snapshot worklib.tb_viterbi_readmemb:v .................... Done
+xcelium> source /home/cadence/XCELIUM2509/tools/xcelium/files/xmsimrc
+xcelium> run
+RESULT pass=1024 fail=0 total=1024
+Simulation complete via $finish(1) at time 35872500 PS + 0
+./tb/tb_viterbi_readmemb.v:71         $finish;
+xcelium> exit
+TOOL:	xrun(64)	25.09-s004: Exiting on May 17, 2026 at 10:33:03 +07  (total: 00:00:01)
