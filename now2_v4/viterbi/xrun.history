@@ -1,0 +1,28 @@
+#e1(17May2026:08:47:58): source ./xcelium.d/env.d/env.history.17May2026_08_47_58
+s1(17May2026:08:47:58):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e2(17May2026:08:50:17): source ./xcelium.d/env.d/env.history.17May2026_08_50_17
+s2(17May2026:08:50:17):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e3(17May2026:08:51:45): source ./xcelium.d/env.d/env.history.17May2026_08_51_45
+s3(17May2026:08:51:45):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e4(17May2026:08:55:41): source ./xcelium.d/env.d/env.history.17May2026_08_55_41
+s4(17May2026:08:55:41):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e5(17May2026:08:56:52): source ./xcelium.d/env.d/env.history.17May2026_08_56_52
+s5(17May2026:08:56:52):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e6(17May2026:08:57:08): source ./xcelium.d/env.d/env.history.17May2026_08_57_08
+s6(17May2026:08:57:08):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e7(17May2026:08:57:51): source ./xcelium.d/env.d/env.history.17May2026_08_57_51
+s7(17May2026:08:57:51):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e8(17May2026:09:18:27): source ./xcelium.d/env.d/env.history.17May2026_09_18_27
+s8(17May2026:09:18:27):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e9(17May2026:09:19:05): source ./xcelium.d/env.d/env.history.17May2026_09_19_05
+s9(17May2026:09:19:05):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e10(17May2026:09:19:46): source ./xcelium.d/env.d/env.history.17May2026_09_19_46
+s10(17May2026:09:19:46):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e11(17May2026:09:24:10): source ./xcelium.d/env.d/env.history.17May2026_09_24_10
+s11(17May2026:09:24:10):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e12(17May2026:09:29:10): source ./xcelium.d/env.d/env.history.17May2026_09_29_10
+s12(17May2026:09:29:10):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e13(17May2026:10:33:02): source ./xcelium.d/env.d/env.history.17May2026_10_33_02
+s13(17May2026:10:33:02):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 
+#e14(17May2026:12:31:58): source ./xcelium.d/env.d/env.history.17May2026_12_31_58
+s14(17May2026:12:31:58):  xrun -64bit -access +rwc rtl/control.v rtl/extract_bit.v rtl/branch_metric.v rtl/add_comp_slt.v rtl/traceback.v rtl/memory.v rtl/viterbi_decoder.v tb/tb_viterbi_readmemb.v 

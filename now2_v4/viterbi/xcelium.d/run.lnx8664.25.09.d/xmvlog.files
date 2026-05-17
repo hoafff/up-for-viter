@@ -1,0 +1,12 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+/home/iclab6/Desktop/viterbi/rtl/control.v
+/home/iclab6/Desktop/viterbi/rtl/extract_bit.v
+/home/iclab6/Desktop/viterbi/rtl/branch_metric.v
+/home/iclab6/Desktop/viterbi/rtl/add_comp_slt.v
+/home/iclab6/Desktop/viterbi/rtl/traceback.v
+/home/iclab6/Desktop/viterbi/rtl/memory.v
+/home/iclab6/Desktop/viterbi/rtl/viterbi_decoder.v
+/home/iclab6/Desktop/viterbi/tb/tb_viterbi_readmemb.v
